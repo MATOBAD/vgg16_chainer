@@ -52,7 +52,7 @@ def main():
     # データの読み込み
     train, test = datasets.get_mnist(ndim=3, dtype='float32')
 
-    # train_for_vgg16(train)
+    # train_dataset = train_for_vgg16(train)
 
     # モデルの読み込み
     model = L.Classifier(my_VGG16(num_class=10))
