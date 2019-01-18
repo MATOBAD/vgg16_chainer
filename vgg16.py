@@ -61,11 +61,7 @@ def main():
     # データの読み込み
     train, test = datasets.get_mnist(ndim=3, dtype='float32')
 
-<<<<<<< HEAD
     train_dataset = train_for_vgg16(train)
-=======
-    # train_dataset = train_for_vgg16(train)
->>>>>>> 5b553b4bddb3810baaf1c6279fd99124e5645680
 
     # モデルの読み込み
     model = L.Classifier(my_VGG16(num_class=10))
