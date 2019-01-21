@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
+import os
 import numpy as np
 import cupy as xp
 import chainer
@@ -41,9 +42,11 @@ def train_for_vgg16(train):
     return train_dataset
 
 
-def model_train(model, train, optimizer, epoch=10, batch_size=50):
-    gpu = 1 
+def model_train(model, train, optimizer, epoch=5, batch_size=64):
+    gpu = 0
+    eval_model = model.copy()
     cuda.get_device(gpu).use()
+    model.to_gpu(gpu)
     split_at = int(len(train) * 0.9)
     train, val = chainer.datasets.split_dataset(train, split_at)
     train_iterator = iterators.SerialIterator(train, batch_size)
@@ -53,16 +56,16 @@ def model_train(model, train, optimizer, epoch=10, batch_size=50):
     trainer.extend(extensions.Evaluator(val_iterator, model, device=gpu))
     trainer.extend(extensions.LogReport())
     trainer.extend(extensions.PrintReport(['epoch', 'main/loss', 'validation/main/loss', 'main/accuracy', 'validation/main/accuracy', 'elapsed_time']))
-    trainer.extend(extensions.snapshot())
+    trainer.extend(extensions.snapshot_object(model, 'model_snapshot_epoch_{.updater.epoch}'))
     trainer.run()
-
 
 def main():
     # データの読み込み
     train, test = datasets.get_mnist(ndim=3, dtype='float32')
 
-    train_dataset = train_for_vgg16(train)
+    train_dataset = train_for_vgg16(train[:10000])
 
+    print('train: ', len(train_dataset))
     # モデルの読み込み
     model = L.Classifier(my_VGG16(num_class=10))
     optimizer = optimizers.Adam()
@@ -71,7 +74,7 @@ def main():
     # pre_trainしたモデルの重みの更新を行わないようにする
     model.predictor.base.disable_update()
 
-    model_train(model, train_dataset, optimizer, epoch=10, batch_size=50)
+    model_train(model, train_dataset, optimizer, epoch=5, batch_size=64)
 
     acc = 0
     for x, y in test[:20]:
@@ -81,8 +84,8 @@ def main():
         out = model.predictor(x)
         print(out.data)
         print(out.data.max())
-        print(np.argmax(out.data))
-        if np.argmax(out.data) == y:
+        print(xp.argmax(out.data))
+        if xp.argmax(out.data) == y:
             print('ok', y)
             acc += 1
 
